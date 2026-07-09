@@ -386,9 +386,10 @@ export default function Home() {
   const [savedParticipants, setSavedParticipants] = useState<SavedParticipant[]>([]);
   const [newParticipantName, setNewParticipantName] = useState("");
   const [participantActionLoading, setParticipantActionLoading] = useState(false);
+  const [participantRosterExpanded, setParticipantRosterExpanded] = useState(false);
   const [participantToAdd, setParticipantToAdd] = useState("");
   const [editParticipantToAdd, setEditParticipantToAdd] = useState("");
-  const [participants, setParticipants] = useState<ParticipantShare[]>([createParticipant(0)]);
+  const [participants, setParticipants] = useState<ParticipantShare[]>([]);
   const [participantsBeforeSplitWithEveryone, setParticipantsBeforeSplitWithEveryone] = useState<ParticipantShare[] | null>(null);
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [activeTabId, setActiveTabId] = useState("");
@@ -404,6 +405,13 @@ export default function Home() {
   const savedParticipantNames = useMemo(
     () => savedParticipants.map((person) => person.name),
     [savedParticipants],
+  );
+  const visibleSavedParticipants = useMemo(
+    () =>
+      participantRosterExpanded
+        ? savedParticipants
+        : savedParticipants.slice(0, 6),
+    [participantRosterExpanded, savedParticipants],
   );
   const editParticipantNames = useMemo(
     () => editParticipants.map((person) => person.name.trim()).filter(Boolean),
@@ -489,18 +497,6 @@ export default function Home() {
 
     const data = (await response.json()) as SavedParticipant[];
     setSavedParticipants(data);
-
-    setParticipants((currentShares) => {
-      if (currentShares.length === 1 && currentShares[0]?.name.trim() === "") {
-        const defaults = buildEqualShares(data.map((person) => person.name));
-
-        if (defaults.length > 0) {
-          return defaults;
-        }
-      }
-
-      return currentShares;
-    });
   }
 
   useEffect(() => {
@@ -915,8 +911,7 @@ export default function Home() {
       setReceiptImageDataUrl(null);
       setReceiptFileName("");
       setParticipantsBeforeSplitWithEveryone(null);
-      const defaults = buildEqualShares(savedParticipantNames);
-      setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
+      setParticipants([]);
       setStatus("Expense saved.");
       await Promise.all([loadTabs(), loadExpenses(activeTabId)]);
     } catch (error) {
@@ -1162,7 +1157,7 @@ export default function Home() {
             <p className={styles.subhead}>No saved participants yet.</p>
           ) : (
             <div className={styles.participants}>
-              {savedParticipants.map((person) => (
+              {visibleSavedParticipants.map((person) => (
                 <div className={styles.participantCard} key={person.id}>
                   <strong>{person.name}</strong>
 
@@ -1186,6 +1181,18 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+
+              {savedParticipants.length > 6 && (
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setParticipantRosterExpanded((current) => !current)}
+                >
+                  {participantRosterExpanded
+                    ? "Show fewer participants"
+                    : `Show all participants (${savedParticipants.length})`}
+                </button>
+              )}
             </div>
           )}
         </article>
@@ -1392,16 +1399,14 @@ export default function Home() {
                   />
                 </label>
 
-                {participants.length > 1 && (
-                  <button
-                    type="button"
-                    className={styles.removeButton}
-                    onClick={() => removeParticipant(participant.id)}
-                    disabled={!activeTab}
-                  >
-                    Remove
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className={styles.removeButton}
+                  onClick={() => removeParticipant(participant.id)}
+                  disabled={!activeTab}
+                >
+                  Remove
+                </button>
               </div>
             ))}
           </div>
@@ -1636,16 +1641,14 @@ export default function Home() {
                               />
                             </label>
 
-                            {editParticipants.length > 1 && (
-                              <button
-                                type="button"
-                                className={styles.removeButton}
-                                onClick={() => removeEditParticipant(participant.id)}
-                                disabled={expenseActionLoading}
-                              >
-                                Remove
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              className={styles.removeButton}
+                              onClick={() => removeEditParticipant(participant.id)}
+                              disabled={expenseActionLoading}
+                            >
+                              Remove
+                            </button>
                           </div>
                         ))}
                       </div>
