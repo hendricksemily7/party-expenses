@@ -1,0 +1,452 @@
+.page {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.card {
+  border: 1px solid #d5d5d5;
+  border-radius: 10px;
+  padding: 20px;
+  background: #fff;
+  display: grid;
+  gap: 12px;
+}
+
+.subhead {
+  color: #5b5b5b;
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.inlineLabel {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  flex: 1 1 220px;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.inlineForm input,
+.form input {
+  border: 1px solid #cfcfcf;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sectionHeader button,
+.quickButtons button,
+.removeButton,
+.submitButton,
+.squareUpButton,
+.secondaryButton,
+.tabButton {
+  border: 1px solid #a0a0a0;
+  border-radius: 8px;
+  background: #f8f8f8;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.tabGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.tabCard {
+  border: 1px solid #a0a0a0;
+  border-radius: 8px;
+  background: #fcfcfc;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.tabButton {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.tabButton strong {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tabButton span {
+  color: #5b5b5b;
+  font-size: 14px;
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #e8f5e9;
+  color: #1f6b2c;
+}
+
+.activeTab {
+  border-color: #0f62fe;
+  background: #eff5ff;
+}
+
+.squaredTab {
+  border-color: #7fbe8a;
+  background: #f2fbf3;
+}
+
+.activeSquaredTab {
+  border-color: #2d8a3d;
+  background: #e7f8ea;
+}
+
+.tabActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.checkboxLabel input {
+  width: 16px;
+  height: 16px;
+}
+
+.transferRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.secondaryButton {
+  justify-self: start;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.receiptPreview {
+  border: 1px dashed #cfcfcf;
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.receiptImage {
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #fafafa;
+}
+
+.receiptHistoryBlock {
+  display: grid;
+  gap: 6px;
+}
+
+.participants {
+  display: grid;
+  gap: 10px;
+}
+
+.participantCard {
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background: #fcfcfc;
+}
+
+.quickButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.active {
+  background: #0f62fe !important;
+  color: #fff;
+  border-color: #0f62fe !important;
+}
+
+.removeButton {
+  justify-self: start;
+}
+
+.submitButton {
+  justify-self: start;
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.squareUpButton {
+  justify-self: start;
+  background: #0f62fe;
+  color: #fff;
+  border-color: #0f62fe;
+}
+
+.sectionHeader button:disabled,
+.quickButtons button:disabled,
+.removeButton:disabled,
+.submitButton:disabled,
+.squareUpButton:disabled,
+.secondaryButton:disabled,
+.tabButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.submitButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.status {
+  font-weight: 600;
+}
+
+.expenseList {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.expenseList > li {
+  border: 1px solid #e3e3e3;
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.expenseHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.expenseActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inlineEditCard {
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+  background: #fafafa;
+}
+
+.inlineEditCard label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.inlineEditCard input {
+  border: 1px solid #cfcfcf;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.squareUpResults {
+  border-top: 1px solid #e3e3e3;
+  padding-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.chartRows {
+  display: grid;
+  gap: 12px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.summaryCard {
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: #fcfcfc;
+}
+
+.summaryCard h4 {
+  margin: 0;
+}
+
+.tabStatusCard {
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #fafafa;
+}
+
+.tabStatusCardDone {
+  border-color: #7fbe8a;
+  background: #eef9ef;
+}
+
+.summaryList {
+  list-style: none;
+  padding-left: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.summaryList li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.explanationCard {
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: #fcfcfc;
+}
+
+.explanationCard h4 {
+  margin: 0;
+}
+
+.explanationList {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+}
+
+.chartCard {
+  border: 1px solid #e3e3e3;
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: #fcfcfc;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.chartHeader h4,
+.chartHeader p {
+  margin: 0;
+}
+
+.chartHeader p {
+  color: #5b5b5b;
+  font-size: 14px;
+}
+
+.chartTrack {
+  width: 100%;
+  border-radius: 999px;
+  background: #ececec;
+  padding: 4px;
+}
+
+.chartBar {
+  display: flex;
+  min-height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.chartSegment {
+  min-width: 10px;
+}
+
+.chartLegend {
+  list-style: none;
+  padding-left: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.chartLegend li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.chartSwatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+@media (max-width: 700px) {
+  .tabStatusCard {
+    align-items: start;
+    flex-direction: column;
+  }
+}

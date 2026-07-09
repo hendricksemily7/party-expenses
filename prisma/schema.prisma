@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SplitType {
+  PERCENT
+  AMOUNT
+}
+
+model Expense {
+  id        String         @id @default(cuid())
+  title     String
+  amount    Decimal        @db.Decimal(10, 2)
+  paidBy    String
+  receiptImageDataUrl String?
+  createdAt DateTime       @default(now())
+  tabId     String
+  tab       Tab            @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  shares    ExpenseShare[]
+
+  @@index([tabId])
+}
+
+model ExpenseShare {
+  id         String    @id @default(cuid())
+  person     String
+  splitType  SplitType
+  percentage Decimal?  @db.Decimal(5, 2)
+  amount     Decimal?  @db.Decimal(10, 2)
+  expenseId  String
+  expense    Expense   @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+
+  @@index([expenseId])
+}
+
+model Tab {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  squaredUp Boolean   @default(false)
+  expenses  Expense[]
+}
