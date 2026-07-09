@@ -13,6 +13,12 @@ type ParticipantShare = {
   value: number;
 };
 
+type SavedParticipant = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
+
 type Expense = {
   id: string;
   title: string;
@@ -27,20 +33,6 @@ type Expense = {
     percentage: string | null;
     amount: string | null;
   }[];
-};
-
-type ExpenseChartItem = {
-  id: string;
-  title: string;
-  amountCents: number;
-  color: string;
-};
-
-type ExpenseChartPerson = {
-  person: string;
-  totalCents: number;
-  widthPercent: number;
-  items: ExpenseChartItem[];
 };
 
 type PersonBalance = {
@@ -74,17 +66,6 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
-
-const chartColors = [
-  "#0f62fe",
-  "#8a3ffc",
-  "#24a148",
-  "#ff832b",
-  "#ee5396",
-  "#007d79",
-  "#a56eff",
-  "#525252",
-];
 
 const toCents = (value: number) => Math.round((value + Number.EPSILON) * 100);
 const MAX_RECEIPT_SIZE_BYTES = 5 * 1024 * 1024;
@@ -249,43 +230,6 @@ function getShareAmountCents(expenseAmount: number, share: Expense["shares"][num
   return toCents(Number(share.amount ?? 0));
 }
 
-function buildExpenseChart(expenses: Expense[]): ExpenseChartPerson[] {
-  const totalsByPerson = new Map<string, ExpenseChartItem[]>();
-
-  for (const [index, expense] of expenses.entries()) {
-    const person = expense.paidBy.trim();
-
-    if (!person) {
-      continue;
-    }
-
-    const items = totalsByPerson.get(person) ?? [];
-    items.push({
-      id: expense.id,
-      title: expense.title,
-      amountCents: toCents(Number(expense.amount)),
-      color: chartColors[index % chartColors.length],
-    });
-    totalsByPerson.set(person, items);
-  }
-
-  const chartRows = Array.from(totalsByPerson.entries())
-    .map(([person, items]) => ({
-      person,
-      items,
-      totalCents: items.reduce((sum, item) => sum + item.amountCents, 0),
-      widthPercent: 0,
-    }))
-    .sort((left, right) => right.totalCents - left.totalCents);
-
-  const maxTotalCents = chartRows[0]?.totalCents ?? 0;
-
-  return chartRows.map((row) => ({
-    ...row,
-    widthPercent: maxTotalCents > 0 ? (row.totalCents / maxTotalCents) * 100 : 0,
-  }));
-}
-
 function buildSettlementSummary(expenses: Expense[]) {
   const balancesByPerson = new Map<string, { getsBackCents: number; owedCents: number }>();
 
@@ -377,6 +321,31 @@ function describeBalance(balance: PersonBalance) {
   )}, so ${balance.person} is already squared up.`;
 }
 
+function evenlySplitPercentages(count: number) {
+  if (count <= 0) {
+    return [] as number[];
+  }
+
+  const baseHundredths = Math.floor(10000 / count);
+  const remainderHundredths = 10000 - baseHundredths * count;
+
+  return Array.from({ length: count }, (_value, index) =>
+    (baseHundredths + (index < remainderHundredths ? 1 : 0)) / 100,
+  );
+}
+
+function buildEqualShares(names: string[]) {
+  const cleanNames = Array.from(new Set(names.map((name) => name.trim()).filter(Boolean)));
+  const percentages = evenlySplitPercentages(cleanNames.length);
+
+  return cleanNames.map((name, index) => ({
+    id: `${Date.now()}-${index}-${name}`,
+    name,
+    splitType: "PERCENT" as const,
+    value: percentages[index] ?? 0,
+  }));
+}
+
 const createParticipant = (index: number): ParticipantShare => ({
   id: `${Date.now()}-${index}`,
   name: "",
@@ -400,6 +369,10 @@ export default function Home() {
   const [editReceiptFileName, setEditReceiptFileName] = useState("");
   const [expenseActionLoading, setExpenseActionLoading] = useState(false);
   const [newTabName, setNewTabName] = useState("");
+  const [savedParticipants, setSavedParticipants] = useState<SavedParticipant[]>([]);
+  const [newParticipantName, setNewParticipantName] = useState("");
+  const [participantActionLoading, setParticipantActionLoading] = useState(false);
+  const [selectedParticipantNames, setSelectedParticipantNames] = useState<string[]>([]);
   const [participants, setParticipants] = useState<ParticipantShare[]>([createParticipant(0)]);
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [activeTabId, setActiveTabId] = useState("");
@@ -409,13 +382,13 @@ export default function Home() {
   const [tabLoading, setTabLoading] = useState(false);
   const [tabActionLoading, setTabActionLoading] = useState(false);
   const [transferLoading, setTransferLoading] = useState(false);
-  const [showSquareUp, setShowSquareUp] = useState(false);
 
   const participantNames = useMemo(
     () => participants.map((person) => person.name.trim()).filter(Boolean),
     [participants],
   );
-  const expenseChart = useMemo(() => buildExpenseChart(expenses), [expenses]);
+  const allParticipantsSelected =
+    savedParticipants.length > 0 && selectedParticipantNames.length === savedParticipants.length;
   const settlementSummary = useMemo(() => buildSettlementSummary(expenses), [expenses]);
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,
@@ -450,9 +423,42 @@ export default function Home() {
     setExpenses(data);
   }
 
+  async function loadParticipants() {
+    const response = await fetch("/api/participants", { cache: "no-store" });
+
+    if (!response.ok) {
+      throw new Error("Unable to load participants.");
+    }
+
+    const data = (await response.json()) as SavedParticipant[];
+    setSavedParticipants(data);
+
+    setSelectedParticipantNames((currentSelection) => {
+      const validSelection = currentSelection.filter((name) =>
+        data.some((person) => person.name === name),
+      );
+      const nextSelection =
+        validSelection.length > 0 ? validSelection : data.map((person) => person.name);
+
+      setParticipants((currentShares) => {
+        if (currentShares.length === 1 && currentShares[0]?.name.trim() === "") {
+          const defaults = buildEqualShares(nextSelection);
+
+          if (defaults.length > 0) {
+            return defaults;
+          }
+        }
+
+        return currentShares;
+      });
+
+      return nextSelection;
+    });
+  }
+
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      loadTabs().catch(() => {
+      Promise.all([loadTabs(), loadParticipants()]).catch(() => {
         setStatus("Could not load tabs yet. Connect your database and try again.");
       });
     }, 0);
@@ -488,6 +494,126 @@ export default function Home() {
 
   function removeParticipant(id: string) {
     setParticipants((current) => current.filter((participant) => participant.id !== id));
+  }
+
+  function applySelectedParticipantsToExpense() {
+    const defaults = buildEqualShares(selectedParticipantNames);
+    setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
+  }
+
+  function toggleAllParticipants(checked: boolean) {
+    if (!checked) {
+      setSelectedParticipantNames([]);
+      return;
+    }
+
+    setSelectedParticipantNames(savedParticipants.map((person) => person.name));
+  }
+
+  function toggleSelectedParticipant(name: string, checked: boolean) {
+    setSelectedParticipantNames((current) => {
+      if (checked) {
+        return Array.from(new Set([...current, name]));
+      }
+
+      return current.filter((item) => item !== name);
+    });
+  }
+
+  async function handleCreateParticipant(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!newParticipantName.trim()) {
+      return;
+    }
+
+    setStatus(null);
+    setParticipantActionLoading(true);
+
+    try {
+      const response = await fetch("/api/participants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newParticipantName }),
+      });
+      const result = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to save participant.");
+      }
+
+      setNewParticipantName("");
+      await loadParticipants();
+      setStatus("Participant saved.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to save participant.");
+    } finally {
+      setParticipantActionLoading(false);
+    }
+  }
+
+  async function handleRenameParticipant(person: SavedParticipant) {
+    const nextName = window.prompt("Rename participant", person.name)?.trim();
+
+    if (!nextName || nextName === person.name) {
+      return;
+    }
+
+    setStatus(null);
+    setParticipantActionLoading(true);
+
+    try {
+      const response = await fetch(`/api/participants/${encodeURIComponent(person.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nextName }),
+      });
+      const result = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to rename participant.");
+      }
+
+      setSelectedParticipantNames((current) =>
+        current.map((name) => (name === person.name ? nextName : name)),
+      );
+      await loadParticipants();
+      setStatus("Participant renamed.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to rename participant.");
+    } finally {
+      setParticipantActionLoading(false);
+    }
+  }
+
+  async function handleDeleteParticipant(person: SavedParticipant) {
+    const confirmed = window.confirm(`Delete participant \"${person.name}\"?`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus(null);
+    setParticipantActionLoading(true);
+
+    try {
+      const response = await fetch(`/api/participants/${encodeURIComponent(person.id)}`, {
+        method: "DELETE",
+      });
+      const result = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to delete participant.");
+      }
+
+      setSelectedParticipantNames((current) => current.filter((name) => name !== person.name));
+      await loadParticipants();
+      setStatus("Participant deleted.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Unable to delete participant.");
+    } finally {
+      setParticipantActionLoading(false);
+    }
   }
 
   async function handleReceiptUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -810,7 +936,8 @@ export default function Home() {
       setPaidBy("");
       setReceiptImageDataUrl(null);
       setReceiptFileName("");
-      setParticipants([createParticipant(0)]);
+      const defaults = buildEqualShares(selectedParticipantNames);
+      setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
       setStatus("Expense saved.");
       await Promise.all([loadTabs(), loadExpenses(activeTabId)]);
     } catch (error) {
@@ -836,7 +963,7 @@ export default function Home() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `square-up-export-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `bach-party-splitter-export-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       window.URL.revokeObjectURL(url);
       setStatus("Export downloaded.");
@@ -912,7 +1039,7 @@ export default function Home() {
       <section className={styles.card}>
         <div className={styles.sectionHeader}>
           <div>
-            <h1>Square Up</h1>
+            <h1>Bach Party Splitter</h1>
             <p className={styles.subhead}>
               Group expenses into tabs so you can square up by month, trip, or event.
             </p>
@@ -1114,6 +1241,89 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        <article className={styles.summaryCard}>
+          <div className={styles.sectionHeader}>
+            <h3>Participants</h3>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={applySelectedParticipantsToExpense}
+              disabled={!activeTab}
+            >
+              Use selection for this expense
+            </button>
+          </div>
+
+          <form className={styles.inlineForm} onSubmit={handleCreateParticipant}>
+            <label className={styles.inlineLabel}>
+              Add participant
+              <input
+                value={newParticipantName}
+                onChange={(event) => setNewParticipantName(event.target.value)}
+                placeholder="Name"
+                disabled={participantActionLoading}
+              />
+            </label>
+            <button
+              type="submit"
+              className={styles.submitButton}
+              disabled={participantActionLoading || !newParticipantName.trim()}
+            >
+              {participantActionLoading ? "Saving..." : "Save participant"}
+            </button>
+          </form>
+
+          <label className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={allParticipantsSelected}
+              onChange={(event) => toggleAllParticipants(event.target.checked)}
+              disabled={savedParticipants.length === 0}
+            />
+            Select all by default
+          </label>
+
+          {savedParticipants.length === 0 ? (
+            <p className={styles.subhead}>No saved participants yet.</p>
+          ) : (
+            <div className={styles.participants}>
+              {savedParticipants.map((person) => (
+                <div className={styles.participantCard} key={person.id}>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={selectedParticipantNames.includes(person.name)}
+                      onChange={(event) =>
+                        toggleSelectedParticipant(person.name, event.target.checked)
+                      }
+                    />
+                    {person.name}
+                  </label>
+
+                  <div className={styles.tabActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => handleRenameParticipant(person)}
+                      disabled={participantActionLoading}
+                    >
+                      Rename
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => handleDeleteParticipant(person)}
+                      disabled={participantActionLoading}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <label>
@@ -1586,76 +1796,6 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-
-            <button
-              type="button"
-              className={styles.squareUpButton}
-              onClick={() => setShowSquareUp((current) => !current)}
-            >
-              {showSquareUp ? "Hide spending chart" : "Show spending chart"}
-            </button>
-
-            {showSquareUp && (
-              <section className={styles.squareUpResults}>
-                <div className={styles.sectionHeader}>
-                  <h3>Spending chart</h3>
-                </div>
-
-                <p className={styles.subhead}>
-                  Each bar shows what a person paid, broken down by expense item in this tab.
-                </p>
-
-                <div className={styles.chartRows}>
-                  {expenseChart.map((person) => (
-                    <article key={person.person} className={styles.chartCard}>
-                      <div className={styles.chartHeader}>
-                        <div>
-                          <h4>{person.person}</h4>
-                          <p>{person.items.length} item(s)</p>
-                        </div>
-                        <strong>{formatCurrency(person.totalCents)}</strong>
-                      </div>
-
-                      <div
-                        className={styles.chartTrack}
-                        aria-label={`${person.person} spent ${formatCurrency(person.totalCents)}`}
-                      >
-                        <div
-                          className={styles.chartBar}
-                          style={{ width: `${Math.max(person.widthPercent, 12)}%` }}
-                        >
-                          {person.items.map((item) => (
-                            <div
-                              key={item.id}
-                              className={styles.chartSegment}
-                              style={{
-                                backgroundColor: item.color,
-                                flexGrow: item.amountCents,
-                              }}
-                              title={`${item.title}: ${formatCurrency(item.amountCents)}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <ul className={styles.chartLegend}>
-                        {person.items.map((item) => (
-                          <li key={item.id}>
-                            <span
-                              className={styles.chartSwatch}
-                              style={{ backgroundColor: item.color }}
-                              aria-hidden="true"
-                            />
-                            <span>{item.title}</span>
-                            <strong>{formatCurrency(item.amountCents)}</strong>
-                          </li>
-                        ))}
-                      </ul>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            )}
           </>
         )}
       </section>

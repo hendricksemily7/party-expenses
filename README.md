@@ -1,6 +1,6 @@
-# square-up
+# bach-party-splitter
 
-Expense tracking between N people with quick split controls (100%, 50%, custom % or custom $), backed by PostgreSQL via Prisma 7.
+Expense tracking for group events with receipts, persistent participants, select-all with opt-out, and final settle-up transfers, backed by PostgreSQL via Prisma 7.
 
 ## Stack
 
@@ -20,7 +20,7 @@ Expense tracking between N people with quick split controls (100%, 50%, custom %
 2. Configure your database URL in `.env`:
 
    ```bash
-   DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/square_up?schema=public"
+   DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/bach_party_splitter?schema=public"
    ```
 
    - Neon works well for hosted PostgreSQL.
@@ -45,6 +45,10 @@ Expense tracking between N people with quick split controls (100%, 50%, custom %
 
 - `GET /api/tabs` returns tabs with expense counts and totals.
 - `POST /api/tabs` creates a new tab such as `May Tab`.
+- `GET /api/participants` returns the persistent participant roster.
+- `POST /api/participants` creates a participant.
+- `PATCH /api/participants/:participantId` renames a participant.
+- `DELETE /api/participants/:participantId` deletes a participant.
 - `GET /api/expenses?tabId=...` returns expenses for one tab.
 - `POST /api/expenses` creates an expense with split rows inside a tab, with an optional receipt image.
 - `PATCH /api/expenses/:expenseId` updates an existing expense (title, payer, amount, split rows) and can add/remove a receipt image.

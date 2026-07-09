@@ -44,3 +44,9 @@ model Tab {
   squaredUp Boolean   @default(false)
   expenses  Expense[]
 }
+
+model Participant {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}

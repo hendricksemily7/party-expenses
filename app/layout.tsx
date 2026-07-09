@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Square Up",
-  description: "Track shared expenses and split responsibility quickly.",
+  title: "Bach Party Splitter",
+  description: "Track bach-party expenses, receipts, participants, and final settle-up totals.",
 };
 
 export default function RootLayout({
