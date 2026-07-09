@@ -379,7 +379,6 @@ export default function Home() {
   const [editReceiptImageDataUrl, setEditReceiptImageDataUrl] = useState<string | null>(null);
   const [editReceiptFileName, setEditReceiptFileName] = useState("");
   const [expenseActionLoading, setExpenseActionLoading] = useState(false);
-  const [newTabName, setNewTabName] = useState("");
   const [savedParticipants, setSavedParticipants] = useState<SavedParticipant[]>([]);
   const [newParticipantName, setNewParticipantName] = useState("");
   const [participantActionLoading, setParticipantActionLoading] = useState(false);
@@ -391,8 +390,6 @@ export default function Home() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tabLoading, setTabLoading] = useState(false);
-  const [tabActionLoading, setTabActionLoading] = useState(false);
   const [transferLoading, setTransferLoading] = useState(false);
 
   const participantNames = useMemo(
@@ -434,6 +431,7 @@ export default function Home() {
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,
     [activeTabId, tabs],
   );
+  const activeEventName = activeTab?.name ?? "Bach Party";
 
   async function loadTabs() {
     const response = await fetch("/api/tabs", { cache: "no-store" });
@@ -442,11 +440,25 @@ export default function Home() {
       throw new Error("Unable to load tabs.");
     }
 
-    const data = (await response.json()) as TabSummary[];
+    let data = (await response.json()) as TabSummary[];
+
+    if (data.length === 0) {
+      const createResponse = await fetch("/api/tabs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Bach Party" }),
+      });
+
+      if (!createResponse.ok) {
+        throw new Error("Unable to create default event.");
+      }
+
+      const created = (await createResponse.json()) as TabSummary;
+      data = [created];
+    }
+
     setTabs(data);
-    setActiveTabId((current) =>
-      current && data.some((tab) => tab.id === current) ? current : (data[0]?.id ?? ""),
-    );
+    setActiveTabId(data[0].id);
     return data;
   }
 
@@ -843,130 +855,6 @@ export default function Home() {
     }
   }
 
-  async function handleCreateTab(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setStatus(null);
-    setTabLoading(true);
-
-    try {
-      const response = await fetch("/api/tabs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newTabName }),
-      });
-
-      const result = (await response.json()) as TabSummary & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(result.error ?? "Unable to create tab.");
-      }
-
-      setTabs((current) => [result, ...current]);
-      setExpenses([]);
-      setActiveTabId(result.id);
-      setNewTabName("");
-      setStatus(`Created ${result.name}.`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to create tab.");
-    } finally {
-      setTabLoading(false);
-    }
-  }
-
-  async function handleSquaredUpChange(tab: TabSummary, squaredUp: boolean) {
-    setStatus(null);
-    setTabActionLoading(true);
-
-    try {
-      const response = await fetch(`/api/tabs/${encodeURIComponent(tab.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ squaredUp }),
-      });
-
-      const result = (await response.json()) as TabSummary & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(result.error ?? "Unable to update tab status.");
-      }
-
-      setTabs((current) => current.map((currentTab) => (currentTab.id === tab.id ? result : currentTab)));
-      setStatus(
-        squaredUp ? `${result.name} is marked squared up.` : `${result.name} is marked as still open.`,
-      );
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to update tab status.");
-    } finally {
-      setTabActionLoading(false);
-    }
-  }
-
-  async function handleRenameTab(tab: TabSummary) {
-    const nextName = window.prompt("Rename tab", tab.name)?.trim();
-
-    if (!nextName || nextName === tab.name) {
-      return;
-    }
-
-    setStatus(null);
-    setTabActionLoading(true);
-
-    try {
-      const response = await fetch(`/api/tabs/${encodeURIComponent(tab.id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: nextName }),
-      });
-
-      const result = (await response.json()) as TabSummary & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(result.error ?? "Unable to rename tab.");
-      }
-
-      setTabs((current) => current.map((currentTab) => (currentTab.id === tab.id ? result : currentTab)));
-      setStatus(`Renamed tab to ${result.name}.`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to rename tab.");
-    } finally {
-      setTabActionLoading(false);
-    }
-  }
-
-  async function handleDeleteTab(tab: TabSummary) {
-    const confirmed = window.confirm(
-      `Delete "${tab.name}"? This will also delete its expenses and shares.`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setStatus(null);
-    setTabActionLoading(true);
-
-    try {
-      const response = await fetch(`/api/tabs/${encodeURIComponent(tab.id)}`, {
-        method: "DELETE",
-      });
-      const result = (await response.json()) as { error?: string };
-
-      if (!response.ok) {
-        throw new Error(result.error ?? "Unable to delete tab.");
-      }
-
-      const remainingTabs = tabs.filter((currentTab) => currentTab.id !== tab.id);
-      setTabs(remainingTabs);
-      setExpenses([]);
-      setActiveTabId((current) => (current === tab.id ? (remainingTabs[0]?.id ?? "") : current));
-      setStatus(`Deleted ${tab.name}.`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unable to delete tab.");
-    } finally {
-      setTabActionLoading(false);
-    }
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus(null);
@@ -1114,86 +1002,17 @@ export default function Home() {
           <div>
             <h1>Bach Party Splitter</h1>
             <p className={styles.subhead}>
-              Group expenses into tabs so you can square up by month, trip, or event.
+              One shared board for receipts, splits, and the final who-owes-who summary.
             </p>
           </div>
         </div>
 
-        <div className={styles.tabGrid}>
-          {tabs.map((tab) => (
-            <article
-              key={tab.id}
-              className={`${styles.tabCard} ${tab.squaredUp ? styles.squaredTab : ""} ${
-                tab.id === activeTabId ? styles.activeTab : ""
-              } ${tab.id === activeTabId && tab.squaredUp ? styles.activeSquaredTab : ""}`}
-            >
-              <button
-                type="button"
-                className={styles.tabButton}
-                onClick={() => {
-                  setExpenses([]);
-                  setActiveTabId(tab.id);
-                }}
-              >
-                <strong>
-                  {tab.name} {tab.squaredUp ? <span className={styles.tabBadge}>Squared up</span> : null}
-                </strong>
-                <span>
-                  {tab.expenseCount} expense{tab.expenseCount === 1 ? "" : "s"} · $
-                  {tab.totalAmount}
-                </span>
-              </button>
-
-              <div className={styles.tabActions}>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={tab.squaredUp}
-                    onChange={(event) => handleSquaredUpChange(tab, event.target.checked)}
-                    disabled={tabActionLoading}
-                  />
-                  Squared up
-                </label>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => handleRenameTab(tab)}
-                  disabled={tabActionLoading}
-                >
-                  Rename
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => handleDeleteTab(tab)}
-                  disabled={tabActionLoading}
-                >
-                  Delete
-                </button>
-              </div>
-            </article>
-          ))}
-
-          {tabs.length === 0 && (
-            <p className={styles.subhead}>Create your first tab to start tracking history.</p>
-          )}
-        </div>
-
-        <form className={styles.inlineForm} onSubmit={handleCreateTab}>
-          <label className={styles.inlineLabel}>
-            New tab
-            <input
-              value={newTabName}
-              onChange={(event) => setNewTabName(event.target.value)}
-              placeholder="May Tab"
-              required
-            />
-          </label>
-
-          <button type="submit" disabled={tabLoading} className={styles.submitButton}>
-            {tabLoading ? "Creating..." : "Create tab"}
-          </button>
-        </form>
+        <article className={styles.summaryCard}>
+          <h4>Current event</h4>
+          <p className={styles.subhead}>
+            {activeEventName} · {expenses.length} expense{expenses.length === 1 ? "" : "s"}
+          </p>
+        </article>
 
         <div className={styles.transferRow}>
           <button
@@ -1232,39 +1051,15 @@ export default function Home() {
           <div>
             <h2>Settle up</h2>
             <p className={styles.subhead}>
-              {activeTab
-                ? `Running total for ${activeTab.name}. This updates whenever that tab's expenses change.`
-                : "Select or create a tab to see the running settle-up total."}
+              Running totals for {activeEventName}. This updates whenever expenses change.
             </p>
           </div>
         </div>
 
-        {activeTab ? (
-          <div className={`${styles.tabStatusCard} ${activeTab.squaredUp ? styles.tabStatusCardDone : ""}`}>
-            <div>
-              <strong>{activeTab.squaredUp ? "This tab is marked squared up." : "This tab is still open."}</strong>
-              <p className={styles.subhead}>
-                {activeTab.squaredUp
-                  ? "The tab card turns green so you can quickly spot completed months, trips, or events."
-                  : "Mark it squared up once everyone has settled so it stands out in your history."}
-              </p>
-            </div>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={activeTab.squaredUp}
-                onChange={(event) => handleSquaredUpChange(activeTab, event.target.checked)}
-                disabled={tabActionLoading}
-              />
-              Squared up
-            </label>
-          </div>
-        ) : null}
-
         {!activeTab ? (
-          <p className={styles.subhead}>No tab selected yet.</p>
+          <p className={styles.subhead}>Preparing your event board...</p>
         ) : expenses.length === 0 ? (
-          <p className={styles.subhead}>No expenses in this tab yet.</p>
+          <p className={styles.subhead}>No expenses yet.</p>
         ) : (
           <>
             <article className={styles.summaryCard}>
@@ -1306,11 +1101,9 @@ export default function Home() {
       <section className={styles.card}>
         <div className={styles.sectionHeader}>
           <div>
-            <h2>{activeTab ? activeTab.name : "Add expenses"}</h2>
+            <h2>Add expenses</h2>
             <p className={styles.subhead}>
-              {activeTab
-                ? `Everything below is scoped to ${activeTab.name}.`
-                : "Create a tab before adding expenses."}
+              Everything below is scoped to {activeEventName}.
             </p>
           </div>
         </div>
@@ -1606,19 +1399,17 @@ export default function Home() {
       <section className={styles.card}>
         <div className={styles.sectionHeader}>
           <div>
-            <h2>{activeTab ? `${activeTab.name} history` : "Recent expenses"}</h2>
+            <h2>Recent expenses</h2>
             <p className={styles.subhead}>
-              {activeTab
-                ? `Running totals and recent expenses for ${activeTab.name}.`
-                : "Select or create a tab to view expenses."}
+              Running totals and recent expenses for {activeEventName}.
             </p>
           </div>
         </div>
 
         {!activeTab ? (
-          <p className={styles.subhead}>No tab selected yet.</p>
+          <p className={styles.subhead}>Preparing your event board...</p>
         ) : expenses.length === 0 ? (
-          <p className={styles.subhead}>No expenses in this tab yet.</p>
+          <p className={styles.subhead}>No expenses yet.</p>
         ) : (
           <>
             <ul className={styles.expenseList}>

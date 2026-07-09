@@ -12,9 +12,12 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  color: #171717;
-  background: #f4f4f4;
-  font-family: Arial, Helvetica, sans-serif;
+  color: #2f2a26;
+  background:
+    radial-gradient(circle at 18% 12%, #f8f2ea 0%, #f6ede4 38%, transparent 58%),
+    radial-gradient(circle at 86% 4%, #f0efe8 0%, #efede4 33%, transparent 56%),
+    #f2ece4;
+  font-family: "Avenir Next", "Nunito", "Trebuchet MS", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

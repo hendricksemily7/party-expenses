@@ -1,27 +1,76 @@
 .page {
+  --bg: #f7efe8;
+  --ink: #2f2a26;
+  --muted: #70665d;
+  --card: #fffaf6;
+  --line: #e7d6c7;
+  --line-strong: #d7beab;
+  --accent: #2f6f5f;
+  --accent-soft: #d9ece6;
+  --warn: #b65434;
+
   display: grid;
-  gap: 16px;
-  padding: 24px;
-  max-width: 980px;
+  gap: 18px;
+  padding: 28px 20px 36px;
+  max-width: 1040px;
   margin: 0 auto;
+  color: var(--ink);
 }
 
 .card {
-  border: 1px solid #d5d5d5;
-  border-radius: 10px;
-  padding: 20px;
-  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: linear-gradient(165deg, var(--card) 0%, #fff 100%);
+  box-shadow: 0 10px 28px rgba(66, 40, 18, 0.06);
   display: grid;
-  gap: 12px;
+  gap: 14px;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionHeader h1 {
+  font-size: clamp(1.55rem, 2.4vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.sectionHeader h2 {
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  line-height: 1.2;
+}
+
+.sectionHeader h3,
+.summaryCard h4,
+.explanationCard h4 {
+  font-size: 1rem;
+  line-height: 1.2;
+  margin: 0;
 }
 
 .subhead {
-  color: #5b5b5b;
+  color: var(--muted);
+  line-height: 1.45;
+  font-size: 0.95rem;
 }
 
 .form {
   display: grid;
   gap: 14px;
+}
+
+.form label,
+.inlineLabel,
+.inlineEditCard label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  color: #4e443d;
 }
 
 .inlineForm {
@@ -32,196 +81,129 @@
 }
 
 .inlineLabel {
-  display: grid;
-  gap: 6px;
-  font-weight: 600;
   flex: 1 1 220px;
 }
 
-.form label {
-  display: grid;
-  gap: 6px;
-  font-weight: 600;
-}
-
 .inlineForm input,
-.form input {
-  border: 1px solid #cfcfcf;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
-}
-
+.form input,
 .inlineForm select,
 .form select,
+.inlineEditCard input,
 .inlineEditCard select {
-  border: 1px solid #cfcfcf;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
   background: #fff;
+  padding: 10px 11px;
+  font-size: 0.95rem;
+  color: var(--ink);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.inlineForm input:focus,
+.form input:focus,
+.inlineForm select:focus,
+.form select:focus,
+.inlineEditCard input:focus,
+.inlineEditCard select:focus {
+  border-color: #3f8f79;
+  box-shadow: 0 0 0 3px rgba(63, 143, 121, 0.18);
+  outline: none;
 }
 
 .sectionHeader button,
 .quickButtons button,
 .removeButton,
 .submitButton,
-.squareUpButton,
 .secondaryButton,
-.tabButton {
-  border: 1px solid #a0a0a0;
-  border-radius: 8px;
-  background: #f8f8f8;
-  padding: 6px 10px;
+.tabButton,
+.rowActions button {
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  padding: 8px 11px;
   cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.tabGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+.sectionHeader button:hover,
+.quickButtons button:hover,
+.removeButton:hover,
+.submitButton:hover,
+.secondaryButton:hover,
+.tabButton:hover,
+.rowActions button:hover {
+  transform: translateY(-1px);
+  border-color: #c9ad97;
+  box-shadow: 0 4px 10px rgba(50, 32, 18, 0.08);
 }
 
-.tabCard {
-  border: 1px solid #a0a0a0;
-  border-radius: 8px;
-  background: #fcfcfc;
-  padding: 12px;
-  display: grid;
-  gap: 10px;
+.sectionHeader button:disabled,
+.quickButtons button:disabled,
+.removeButton:disabled,
+.submitButton:disabled,
+.secondaryButton:disabled,
+.tabButton:disabled,
+.rowActions button:disabled {
+  opacity: 0.58;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
 }
 
-.tabButton {
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  padding: 0;
-  border: 0;
-  background: transparent;
+.submitButton {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
-.tabButton strong {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.tabButton span {
-  color: #5b5b5b;
-  font-size: 14px;
-}
-
-.tabBadge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  background: #e8f5e9;
-  color: #1f6b2c;
-}
-
-.activeTab {
-  border-color: #0f62fe;
-  background: #eff5ff;
-}
-
-.squaredTab {
-  border-color: #7fbe8a;
-  background: #f2fbf3;
-}
-
-.activeSquaredTab {
-  border-color: #2d8a3d;
-  background: #e7f8ea;
-}
-
-.tabActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.rowActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.checkboxLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
-
-.checkboxLabel input {
-  width: 16px;
-  height: 16px;
-}
-
-.transferRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.submitButton:hover {
+  border-color: #245648;
 }
 
 .secondaryButton {
   justify-self: start;
 }
 
-.hiddenInput {
-  display: none;
+.active {
+  background: #1f5f4f !important;
+  color: #fff;
+  border-color: #1f5f4f !important;
 }
 
-.receiptPreview {
-  border: 1px dashed #cfcfcf;
-  border-radius: 8px;
-  padding: 10px;
+.summaryCard,
+.explanationCard,
+.inlineEditCard,
+.participantCard {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
   display: grid;
+  gap: 10px;
+}
+
+.tabActions,
+.rowActions,
+.expenseActions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  justify-items: start;
 }
 
-.receiptImage {
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  object-fit: cover;
-  background: #fafafa;
-}
-
-.receiptHistoryBlock {
-  display: grid;
-  gap: 6px;
+.transferRow,
+.rosterPickerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
 }
 
 .participants {
   display: grid;
   gap: 10px;
-}
-
-.rosterPickerRow {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: end;
-}
-
-.participantCard {
-  border: 1px solid #e1e1e1;
-  border-radius: 8px;
-  padding: 10px;
-  display: grid;
-  gap: 8px;
-  background: #fcfcfc;
 }
 
 .quickButtons {
@@ -230,143 +212,53 @@
   gap: 6px;
 }
 
-.active {
-  background: #0f62fe !important;
-  color: #fff;
-  border-color: #0f62fe !important;
-}
-
 .removeButton {
   justify-self: start;
+  color: var(--warn);
+  border-color: #e9c0ae;
 }
 
-.submitButton {
-  justify-self: start;
-  background: #111;
-  color: #fff;
-  border-color: #111;
+.checkboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
 }
 
-.squareUpButton {
-  justify-self: start;
-  background: #0f62fe;
-  color: #fff;
-  border-color: #0f62fe;
+.checkboxLabel input {
+  width: 16px;
+  height: 16px;
 }
 
-.sectionHeader button:disabled,
-.quickButtons button:disabled,
-.removeButton:disabled,
-.submitButton:disabled,
-.squareUpButton:disabled,
-.secondaryButton:disabled,
-.tabButton:disabled {
-  opacity: 0.7;
-  cursor: default;
-}
-
-.submitButton:disabled {
-  opacity: 0.7;
-  cursor: default;
+.hiddenInput {
+  display: none;
 }
 
 .status {
-  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #cfe6df;
+  background: #edf8f4;
+  color: #2d5a4d;
+  font-weight: 700;
 }
 
-.expenseList {
-  list-style: none;
-  display: grid;
-  gap: 10px;
-}
-
-.expenseList > li {
-  border: 1px solid #e3e3e3;
-  border-radius: 8px;
+.receiptPreview,
+.receiptHistoryBlock {
+  border: 1px dashed #d9c4b2;
+  border-radius: 14px;
   padding: 10px;
   display: grid;
-  gap: 6px;
-}
-
-.expenseHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.expenseActions {
-  display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+  justify-items: start;
+  background: #fff;
 }
 
-.inlineEditCard {
-  border: 1px solid #e1e1e1;
-  border-radius: 8px;
-  padding: 10px;
-  display: grid;
-  gap: 10px;
-  background: #fafafa;
-}
-
-.inlineEditCard label {
-  display: grid;
-  gap: 6px;
-  font-weight: 600;
-}
-
-.inlineEditCard input {
-  border: 1px solid #cfcfcf;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 14px;
-}
-
-.squareUpResults {
-  border-top: 1px solid #e3e3e3;
-  padding-top: 12px;
-  display: grid;
-  gap: 12px;
-}
-
-.chartRows {
-  display: grid;
-  gap: 12px;
-}
-
-.summaryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-}
-
-.summaryCard {
-  border: 1px solid #e3e3e3;
-  border-radius: 10px;
-  padding: 12px;
-  display: grid;
-  gap: 10px;
-  background: #fcfcfc;
-}
-
-.summaryCard h4 {
-  margin: 0;
-}
-
-.tabStatusCard {
-  border: 1px solid #d7d7d7;
-  border-radius: 10px;
-  padding: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  background: #fafafa;
-}
-
-.tabStatusCardDone {
-  border-color: #7fbe8a;
-  background: #eef9ef;
+.receiptImage {
+  border: 1px solid #e4d4c6;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #fff;
 }
 
 .summaryList {
@@ -376,100 +268,78 @@
   gap: 8px;
 }
 
-.summaryList li {
+.summaryList li,
+.expenseHeader {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.explanationCard {
-  border: 1px solid #e3e3e3;
-  border-radius: 10px;
-  padding: 12px;
-  display: grid;
   gap: 10px;
-  background: #fcfcfc;
-}
-
-.explanationCard h4 {
-  margin: 0;
+  align-items: center;
 }
 
 .explanationList {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 18px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  color: #544b43;
 }
 
-.chartCard {
-  border: 1px solid #e3e3e3;
-  border-radius: 10px;
-  padding: 12px;
+.expenseList {
+  list-style: none;
   display: grid;
   gap: 10px;
-  background: #fcfcfc;
 }
 
-.chartHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: start;
+.expenseList > li {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  background: #fff;
 }
 
-.chartHeader h4,
-.chartHeader p {
+.expenseList > li > p {
+  color: #5f554c;
+}
+
+.expenseList ul {
   margin: 0;
-}
-
-.chartHeader p {
-  color: #5b5b5b;
-  font-size: 14px;
-}
-
-.chartTrack {
-  width: 100%;
-  border-radius: 999px;
-  background: #ececec;
-  padding: 4px;
-}
-
-.chartBar {
-  display: flex;
-  min-height: 18px;
-  overflow: hidden;
-  border-radius: 999px;
-}
-
-.chartSegment {
-  min-width: 10px;
-}
-
-.chartLegend {
-  list-style: none;
-  padding-left: 0;
+  padding-left: 18px;
   display: grid;
-  gap: 8px;
+  gap: 4px;
+  color: #534b44;
 }
 
-.chartLegend li {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 8px;
-  align-items: center;
+.tabGrid,
+.tabCard,
+.tabBadge,
+.activeTab,
+.squaredTab,
+.activeSquaredTab,
+.tabButton,
+.tabStatusCard,
+.tabStatusCardDone {
+  display: none;
 }
 
-.chartSwatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-}
+@media (max-width: 760px) {
+  .page {
+    padding: 16px 12px 22px;
+    gap: 12px;
+  }
 
-@media (max-width: 700px) {
-  .tabStatusCard {
+  .card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .sectionHeader {
     align-items: start;
     flex-direction: column;
+  }
+
+  .inlineLabel {
+    flex-basis: 100%;
   }
 }
