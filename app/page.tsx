@@ -613,6 +613,7 @@ export default function Home() {
       }
 
       setNewParticipantName("");
+      setParticipantRosterExpanded(false);
       await loadParticipants();
       setStatus("Participant saved.");
     } catch (error) {
@@ -643,6 +644,7 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(result.error ?? "Unable to rename participant.");
       }
+      setParticipantRosterExpanded(false);
       await loadParticipants();
       setStatus("Participant renamed.");
     } catch (error) {
@@ -671,6 +673,7 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(result.error ?? "Unable to delete participant.");
       }
+      setParticipantRosterExpanded(false);
       await loadParticipants();
       setStatus("Participant deleted.");
     } catch (error) {
