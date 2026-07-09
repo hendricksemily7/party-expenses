@@ -62,6 +62,10 @@ type ImportResponse = {
   importedTabs?: { id: string; name: string }[];
 };
 
+function cloneShares(shares: ParticipantShare[]) {
+  return shares.map((share) => ({ ...share }));
+}
+
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -385,6 +389,7 @@ export default function Home() {
   const [participantToAdd, setParticipantToAdd] = useState("");
   const [editParticipantToAdd, setEditParticipantToAdd] = useState("");
   const [participants, setParticipants] = useState<ParticipantShare[]>([createParticipant(0)]);
+  const [participantsBeforeSplitWithEveryone, setParticipantsBeforeSplitWithEveryone] = useState<ParticipantShare[] | null>(null);
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [activeTabId, setActiveTabId] = useState("");
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -523,6 +528,7 @@ export default function Home() {
   }, [activeTabId]);
 
   function updateParticipant(id: string, updates: Partial<ParticipantShare>) {
+    setParticipantsBeforeSplitWithEveryone(null);
     setParticipants((current) =>
       current.map((participant) =>
         participant.id === id ? { ...participant, ...updates } : participant,
@@ -531,15 +537,24 @@ export default function Home() {
   }
 
   function addParticipant() {
+    setParticipantsBeforeSplitWithEveryone(null);
     setParticipants((current) => [...current, createParticipant(current.length)]);
   }
 
   function removeParticipant(id: string) {
+    setParticipantsBeforeSplitWithEveryone(null);
     setParticipants((current) => current.filter((participant) => participant.id !== id));
   }
 
-  function useAllParticipantsForExpense() {
+  function toggleSplitWithEveryone() {
+    if (participantsBeforeSplitWithEveryone) {
+      setParticipants(cloneShares(participantsBeforeSplitWithEveryone));
+      setParticipantsBeforeSplitWithEveryone(null);
+      return;
+    }
+
     const defaults = buildEqualShares(savedParticipantNames);
+    setParticipantsBeforeSplitWithEveryone(cloneShares(participants));
     setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
   }
 
@@ -550,6 +565,7 @@ export default function Home() {
       return;
     }
 
+    setParticipantsBeforeSplitWithEveryone(null);
     setParticipants((current) => [
       ...current,
       {
@@ -562,6 +578,7 @@ export default function Home() {
   }
 
   function splitCurrentParticipantsEqually() {
+    setParticipantsBeforeSplitWithEveryone(null);
     setParticipants((current) => {
       const updates = buildEqualShareUpdates(current.map((participant) => participant.name));
 
@@ -897,6 +914,7 @@ export default function Home() {
       setPaidBy("");
       setReceiptImageDataUrl(null);
       setReceiptFileName("");
+      setParticipantsBeforeSplitWithEveryone(null);
       const defaults = buildEqualShares(savedParticipantNames);
       setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
       setStatus("Expense saved.");
@@ -1114,10 +1132,10 @@ export default function Home() {
             <button
               type="button"
               className={styles.secondaryButton}
-              onClick={useAllParticipantsForExpense}
-              disabled={!activeTab}
+              onClick={toggleSplitWithEveryone}
+              disabled={!activeTab || savedParticipantNames.length === 0}
             >
-              Use everyone in split
+              {participantsBeforeSplitWithEveryone ? "Undo split with everyone" : "Split with everyone"}
             </button>
           </div>
 
