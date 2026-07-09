@@ -346,6 +346,17 @@ function buildEqualShares(names: string[]) {
   }));
 }
 
+function buildEqualShareUpdates(names: string[]): Array<{ name: string; splitType: SplitType; value: number }> {
+  const cleanNames = names.map((name) => name.trim()).filter(Boolean);
+  const percentages = evenlySplitPercentages(cleanNames.length);
+
+  return cleanNames.map((name, index) => ({
+    name,
+    splitType: "PERCENT" as const,
+    value: percentages[index] ?? 0,
+  }));
+}
+
 const createParticipant = (index: number): ParticipantShare => ({
   id: `${Date.now()}-${index}`,
   name: "",
@@ -373,6 +384,8 @@ export default function Home() {
   const [newParticipantName, setNewParticipantName] = useState("");
   const [participantActionLoading, setParticipantActionLoading] = useState(false);
   const [selectedParticipantNames, setSelectedParticipantNames] = useState<string[]>([]);
+  const [participantToAdd, setParticipantToAdd] = useState("");
+  const [editParticipantToAdd, setEditParticipantToAdd] = useState("");
   const [participants, setParticipants] = useState<ParticipantShare[]>([createParticipant(0)]);
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [activeTabId, setActiveTabId] = useState("");
@@ -387,6 +400,32 @@ export default function Home() {
     () => participants.map((person) => person.name.trim()).filter(Boolean),
     [participants],
   );
+  const editParticipantNames = useMemo(
+    () => editParticipants.map((person) => person.name.trim()).filter(Boolean),
+    [editParticipants],
+  );
+  const availableParticipantsToAdd = useMemo(
+    () =>
+      savedParticipants
+        .map((person) => person.name)
+        .filter((name) => !participantNames.includes(name)),
+    [savedParticipants, participantNames],
+  );
+  const availableEditParticipantsToAdd = useMemo(
+    () =>
+      savedParticipants
+        .map((person) => person.name)
+        .filter((name) => !editParticipantNames.includes(name)),
+    [savedParticipants, editParticipantNames],
+  );
+  const currentParticipantToAdd =
+    participantToAdd && availableParticipantsToAdd.includes(participantToAdd)
+      ? participantToAdd
+      : (availableParticipantsToAdd[0] ?? "");
+  const currentEditParticipantToAdd =
+    editParticipantToAdd && availableEditParticipantsToAdd.includes(editParticipantToAdd)
+      ? editParticipantToAdd
+      : (availableEditParticipantsToAdd[0] ?? "");
   const allParticipantsSelected =
     savedParticipants.length > 0 && selectedParticipantNames.length === savedParticipants.length;
   const settlementSummary = useMemo(() => buildSettlementSummary(expenses), [expenses]);
@@ -499,6 +538,40 @@ export default function Home() {
   function applySelectedParticipantsToExpense() {
     const defaults = buildEqualShares(selectedParticipantNames);
     setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
+  }
+
+  function addParticipantFromRoster(name: string) {
+    const cleanName = name.trim();
+
+    if (!cleanName || participantNames.includes(cleanName)) {
+      return;
+    }
+
+    setParticipants((current) => [
+      ...current,
+      {
+        id: `${Date.now()}-${current.length}-${cleanName}`,
+        name: cleanName,
+        splitType: "PERCENT",
+        value: 0,
+      },
+    ]);
+  }
+
+  function splitCurrentParticipantsEqually() {
+    setParticipants((current) => {
+      const updates = buildEqualShareUpdates(current.map((participant) => participant.name));
+
+      if (updates.length === 0) {
+        return current;
+      }
+
+      return current.map((participant, index) => ({
+        ...participant,
+        splitType: updates[index]?.splitType ?? participant.splitType,
+        value: updates[index]?.value ?? participant.value,
+      }));
+    });
   }
 
   function toggleAllParticipants(checked: boolean) {
@@ -675,6 +748,40 @@ export default function Home() {
 
   function addEditParticipant() {
     setEditParticipants((current) => [...current, createParticipant(current.length)]);
+  }
+
+  function addEditParticipantFromRoster(name: string) {
+    const cleanName = name.trim();
+
+    if (!cleanName || editParticipantNames.includes(cleanName)) {
+      return;
+    }
+
+    setEditParticipants((current) => [
+      ...current,
+      {
+        id: `${Date.now()}-${current.length}-${cleanName}`,
+        name: cleanName,
+        splitType: "PERCENT",
+        value: 0,
+      },
+    ]);
+  }
+
+  function splitEditParticipantsEqually() {
+    setEditParticipants((current) => {
+      const updates = buildEqualShareUpdates(current.map((participant) => participant.name));
+
+      if (updates.length === 0) {
+        return current;
+      }
+
+      return current.map((participant, index) => ({
+        ...participant,
+        splitType: updates[index]?.splitType ?? participant.splitType,
+        value: updates[index]?.value ?? participant.value,
+      }));
+    });
   }
 
   function removeEditParticipant(id: string) {
@@ -1325,6 +1432,12 @@ export default function Home() {
           )}
         </article>
 
+        <datalist id="saved-participants-list">
+          {savedParticipants.map((person) => (
+            <option key={person.id} value={person.name} />
+          ))}
+        </datalist>
+
         <form className={styles.form} onSubmit={handleSubmit}>
           <label>
             Expense name
@@ -1356,6 +1469,7 @@ export default function Home() {
             <input
               value={paidBy}
               onChange={(event) => setPaidBy(event.target.value)}
+              list="saved-participants-list"
               required
               placeholder={participantNames[0] ?? "Name"}
               disabled={!activeTab}
@@ -1398,8 +1512,38 @@ export default function Home() {
 
           <div className={styles.sectionHeader}>
             <h2>Who owes who what</h2>
-            <button type="button" onClick={addParticipant} disabled={!activeTab}>
-              + Person
+            <div className={styles.rowActions}>
+              <button type="button" onClick={splitCurrentParticipantsEqually} disabled={!activeTab}>
+                Split equally
+              </button>
+              <button type="button" onClick={addParticipant} disabled={!activeTab}>
+                + Person
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.rosterPickerRow}>
+            <label className={styles.inlineLabel}>
+              Add from participant list
+              <select
+                value={currentParticipantToAdd}
+                onChange={(event) => setParticipantToAdd(event.target.value)}
+                disabled={!activeTab || availableParticipantsToAdd.length === 0}
+              >
+                {availableParticipantsToAdd.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              disabled={!activeTab || !currentParticipantToAdd}
+              onClick={() => addParticipantFromRoster(currentParticipantToAdd)}
+            >
+              Add to this expense
             </button>
           </div>
 
@@ -1410,6 +1554,7 @@ export default function Home() {
                   Person
                   <input
                     value={participant.name}
+                    list="saved-participants-list"
                     onChange={(event) =>
                       updateParticipant(participant.id, { name: event.target.value })
                     }
@@ -1583,6 +1728,7 @@ export default function Home() {
                         Paid by
                         <input
                           value={editPaidBy}
+                          list="saved-participants-list"
                           onChange={(event) => setEditPaidBy(event.target.value)}
                           disabled={expenseActionLoading}
                         />
@@ -1590,13 +1736,50 @@ export default function Home() {
 
                       <div className={styles.sectionHeader}>
                         <h3>Edit split</h3>
+                        <div className={styles.rowActions}>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={splitEditParticipantsEqually}
+                            disabled={expenseActionLoading}
+                          >
+                            Split equally
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={addEditParticipant}
+                            disabled={expenseActionLoading}
+                          >
+                            + Person
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className={styles.rosterPickerRow}>
+                        <label className={styles.inlineLabel}>
+                          Add from participant list
+                          <select
+                            value={currentEditParticipantToAdd}
+                            onChange={(event) => setEditParticipantToAdd(event.target.value)}
+                            disabled={
+                              expenseActionLoading || availableEditParticipantsToAdd.length === 0
+                            }
+                          >
+                            {availableEditParticipantsToAdd.map((name) => (
+                              <option key={name} value={name}>
+                                {name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                         <button
                           type="button"
                           className={styles.secondaryButton}
-                          onClick={addEditParticipant}
-                          disabled={expenseActionLoading}
+                          disabled={expenseActionLoading || !currentEditParticipantToAdd}
+                          onClick={() => addEditParticipantFromRoster(currentEditParticipantToAdd)}
                         >
-                          + Person
+                          Add to split
                         </button>
                       </div>
 
@@ -1607,6 +1790,7 @@ export default function Home() {
                               Person
                               <input
                                 value={participant.name}
+                                list="saved-participants-list"
                                 onChange={(event) =>
                                   updateEditParticipant(participant.id, { name: event.target.value })
                                 }

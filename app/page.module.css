@@ -52,6 +52,16 @@
   font-size: 14px;
 }
 
+.inlineForm select,
+.form select,
+.inlineEditCard select {
+  border: 1px solid #cfcfcf;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  background: #fff;
+}
+
 .sectionHeader {
   display: flex;
   justify-content: space-between;
@@ -140,6 +150,12 @@
   flex-wrap: wrap;
 }
 
+.rowActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .checkboxLabel {
   display: inline-flex;
   align-items: center;
@@ -190,6 +206,13 @@
 .participants {
   display: grid;
   gap: 10px;
+}
+
+.rosterPickerRow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: end;
 }
 
 .participantCard {
