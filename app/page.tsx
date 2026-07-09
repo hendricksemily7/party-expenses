@@ -383,7 +383,6 @@ export default function Home() {
   const [savedParticipants, setSavedParticipants] = useState<SavedParticipant[]>([]);
   const [newParticipantName, setNewParticipantName] = useState("");
   const [participantActionLoading, setParticipantActionLoading] = useState(false);
-  const [selectedParticipantNames, setSelectedParticipantNames] = useState<string[]>([]);
   const [participantToAdd, setParticipantToAdd] = useState("");
   const [editParticipantToAdd, setEditParticipantToAdd] = useState("");
   const [participants, setParticipants] = useState<ParticipantShare[]>([createParticipant(0)]);
@@ -399,6 +398,10 @@ export default function Home() {
   const participantNames = useMemo(
     () => participants.map((person) => person.name.trim()).filter(Boolean),
     [participants],
+  );
+  const savedParticipantNames = useMemo(
+    () => savedParticipants.map((person) => person.name),
+    [savedParticipants],
   );
   const editParticipantNames = useMemo(
     () => editParticipants.map((person) => person.name.trim()).filter(Boolean),
@@ -426,8 +429,6 @@ export default function Home() {
     editParticipantToAdd && availableEditParticipantsToAdd.includes(editParticipantToAdd)
       ? editParticipantToAdd
       : (availableEditParticipantsToAdd[0] ?? "");
-  const allParticipantsSelected =
-    savedParticipants.length > 0 && selectedParticipantNames.length === savedParticipants.length;
   const settlementSummary = useMemo(() => buildSettlementSummary(expenses), [expenses]);
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? null,
@@ -472,26 +473,16 @@ export default function Home() {
     const data = (await response.json()) as SavedParticipant[];
     setSavedParticipants(data);
 
-    setSelectedParticipantNames((currentSelection) => {
-      const validSelection = currentSelection.filter((name) =>
-        data.some((person) => person.name === name),
-      );
-      const nextSelection =
-        validSelection.length > 0 ? validSelection : data.map((person) => person.name);
+    setParticipants((currentShares) => {
+      if (currentShares.length === 1 && currentShares[0]?.name.trim() === "") {
+        const defaults = buildEqualShares(data.map((person) => person.name));
 
-      setParticipants((currentShares) => {
-        if (currentShares.length === 1 && currentShares[0]?.name.trim() === "") {
-          const defaults = buildEqualShares(nextSelection);
-
-          if (defaults.length > 0) {
-            return defaults;
-          }
+        if (defaults.length > 0) {
+          return defaults;
         }
+      }
 
-        return currentShares;
-      });
-
-      return nextSelection;
+      return currentShares;
     });
   }
 
@@ -535,8 +526,8 @@ export default function Home() {
     setParticipants((current) => current.filter((participant) => participant.id !== id));
   }
 
-  function applySelectedParticipantsToExpense() {
-    const defaults = buildEqualShares(selectedParticipantNames);
+  function useAllParticipantsForExpense() {
+    const defaults = buildEqualShares(savedParticipantNames);
     setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
   }
 
@@ -571,25 +562,6 @@ export default function Home() {
         splitType: updates[index]?.splitType ?? participant.splitType,
         value: updates[index]?.value ?? participant.value,
       }));
-    });
-  }
-
-  function toggleAllParticipants(checked: boolean) {
-    if (!checked) {
-      setSelectedParticipantNames([]);
-      return;
-    }
-
-    setSelectedParticipantNames(savedParticipants.map((person) => person.name));
-  }
-
-  function toggleSelectedParticipant(name: string, checked: boolean) {
-    setSelectedParticipantNames((current) => {
-      if (checked) {
-        return Array.from(new Set([...current, name]));
-      }
-
-      return current.filter((item) => item !== name);
     });
   }
 
@@ -646,10 +618,6 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(result.error ?? "Unable to rename participant.");
       }
-
-      setSelectedParticipantNames((current) =>
-        current.map((name) => (name === person.name ? nextName : name)),
-      );
       await loadParticipants();
       setStatus("Participant renamed.");
     } catch (error) {
@@ -678,8 +646,6 @@ export default function Home() {
       if (!response.ok) {
         throw new Error(result.error ?? "Unable to delete participant.");
       }
-
-      setSelectedParticipantNames((current) => current.filter((name) => name !== person.name));
       await loadParticipants();
       setStatus("Participant deleted.");
     } catch (error) {
@@ -1043,7 +1009,7 @@ export default function Home() {
       setPaidBy("");
       setReceiptImageDataUrl(null);
       setReceiptFileName("");
-      const defaults = buildEqualShares(selectedParticipantNames);
+      const defaults = buildEqualShares(savedParticipantNames);
       setParticipants(defaults.length > 0 ? defaults : [createParticipant(0)]);
       setStatus("Expense saved.");
       await Promise.all([loadTabs(), loadExpenses(activeTabId)]);
@@ -1355,10 +1321,10 @@ export default function Home() {
             <button
               type="button"
               className={styles.secondaryButton}
-              onClick={applySelectedParticipantsToExpense}
+              onClick={useAllParticipantsForExpense}
               disabled={!activeTab}
             >
-              Use selection for this expense
+              Use everyone in split
             </button>
           </div>
 
@@ -1381,32 +1347,13 @@ export default function Home() {
             </button>
           </form>
 
-          <label className={styles.checkboxLabel}>
-            <input
-              type="checkbox"
-              checked={allParticipantsSelected}
-              onChange={(event) => toggleAllParticipants(event.target.checked)}
-              disabled={savedParticipants.length === 0}
-            />
-            Select all by default
-          </label>
-
           {savedParticipants.length === 0 ? (
             <p className={styles.subhead}>No saved participants yet.</p>
           ) : (
             <div className={styles.participants}>
               {savedParticipants.map((person) => (
                 <div className={styles.participantCard} key={person.id}>
-                  <label className={styles.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={selectedParticipantNames.includes(person.name)}
-                      onChange={(event) =>
-                        toggleSelectedParticipant(person.name, event.target.checked)
-                      }
-                    />
-                    {person.name}
-                  </label>
+                  <strong>{person.name}</strong>
 
                   <div className={styles.tabActions}>
                     <button
