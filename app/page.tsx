@@ -406,13 +406,6 @@ export default function Home() {
     () => savedParticipants.map((person) => person.name),
     [savedParticipants],
   );
-  const visibleSavedParticipants = useMemo(
-    () =>
-      participantRosterExpanded
-        ? savedParticipants
-        : savedParticipants.slice(0, 6),
-    [participantRosterExpanded, savedParticipants],
-  );
   const editParticipantNames = useMemo(
     () => editParticipants.map((person) => person.name.trim()).filter(Boolean),
     [editParticipants],
@@ -1160,42 +1153,41 @@ export default function Home() {
             <p className={styles.subhead}>No saved participants yet.</p>
           ) : (
             <div className={styles.participants}>
-              {visibleSavedParticipants.map((person) => (
-                <div className={styles.participantCard} key={person.id}>
-                  <strong>{person.name}</strong>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => setParticipantRosterExpanded((current) => !current)}
+              >
+                {participantRosterExpanded
+                  ? "Hide participants"
+                  : `Show all ${savedParticipants.length} participants`}
+              </button>
 
-                  <div className={styles.tabActions}>
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={() => handleRenameParticipant(person)}
-                      disabled={participantActionLoading}
-                    >
-                      Rename
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={() => handleDeleteParticipant(person)}
-                      disabled={participantActionLoading}
-                    >
-                      Delete
-                    </button>
+              {participantRosterExpanded &&
+                savedParticipants.map((person) => (
+                  <div className={styles.participantCard} key={person.id}>
+                    <strong>{person.name}</strong>
+
+                    <div className={styles.tabActions}>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => handleRenameParticipant(person)}
+                        disabled={participantActionLoading}
+                      >
+                        Rename
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => handleDeleteParticipant(person)}
+                        disabled={participantActionLoading}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-
-              {savedParticipants.length > 6 && (
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => setParticipantRosterExpanded((current) => !current)}
-                >
-                  {participantRosterExpanded
-                    ? "Show fewer participants"
-                    : `Show all participants (${savedParticipants.length})`}
-                </button>
-              )}
+                ))}
             </div>
           )}
         </article>
