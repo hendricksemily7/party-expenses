@@ -69,12 +69,13 @@ Imported tabs keep their history. If a tab name already exists in the target dat
 ## Deploy on Vercel
 
 1. Import this repository into Vercel.
-2. Add `DATABASE_URL` (Neon recommended) in Vercel environment variables for each environment you want to deploy.
-3. Deploy.
+2. Add `DATABASE_URL` in Vercel environment variables for each environment you want to deploy.
+3. Also add `DIRECT_URL` that points to a direct Postgres connection (non-pooled). This is used for Prisma migrations to avoid advisory-lock issues during deploys.
+4. Deploy.
 
 Vercel now runs `npm run vercel-build`, which:
 
-- applies the committed Prisma migrations with `prisma migrate deploy`
+- applies the committed Prisma migrations with `prisma migrate deploy` (with retries)
 - generates the Prisma client before the Next.js build
 
 The initial migration is committed in `prisma/migrations`, so a fresh PostgreSQL database can be provisioned during the first deployment.
